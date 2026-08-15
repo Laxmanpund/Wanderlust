@@ -8,7 +8,8 @@ const ejsMate = require('ejs-mate');
 const { nextTick } = require("process");
 const wrapAsync = require("./utils/wrapAsync.js");
 const ExpressError = require("./utils/ExpressError.js");
-const listingSchema=require("./schema.js");
+const {listingSchema, reviewSchema} = require("./schema.js");
+const Review =require("./models/review.js");
 
 const MANGO_URL= "mongodb://127.0.0.1:27017/wanderlust";
 main().then(()=> {
@@ -36,12 +37,23 @@ const validatelisting = ((req, res,next)=>{
     let {error}=listingSchema.validate(req.body);
     if(error){
         let errMsg=error.details.map((el)=>el.message).join(",");
-        throw new ExpressError(400,"errMsg");
+        throw new ExpressError(400,errMsg);
     }
     else{
         next();
     }
 });
+
+const validateReview =((req, res, next) => {
+    let {error} = reviewSchema.validate(req.body);
+    if(error){
+        let errMsg= error.details.map((el)=> el.message).join(",");
+        throw new ExpressError(400,errMsg);
+    }else{
+        next();
+    }
+});
+
 
 // index route
 app.get("/listings" ,wrapAsync(async (req,res)=> {
@@ -57,7 +69,7 @@ app.get("/listings/new",(req,res)=>{
 // show route
 app.get("/listings/:id",wrapAsync(async (req,res) =>{
     let {id}=req.params;
-    const listing = await Listing.findById(id);
+    const listing = await Listing.findById(id).populate("reviews");
     res.render("listings/show.ejs",{listing});
 }));
 
@@ -92,19 +104,36 @@ app.delete("/listings/:id",wrapAsync(async (req,res)=>{
     res.redirect("/listings");
 }));
 
-// app.get("/testListing" ,async (req,res) => {
-//     let sampleListing = new Listing({
-//         title : "my new villa",
-//         description : "by the beach",
-//         price: 1400,
-//         location: "calangute, goa",
-//         country: "india"
-//     })
-//     await sampleListing.save();
-//     console.log("sample was saved");
-//     res.send("sucessful testing");
-// });
 
+// reviews 
+// post review route
+app.post("/listings/:id/reviews",validateReview, wrapAsync(async(req,res) => {
+    let listing = await Listing.findById(req.params.id);
+
+    let newReview = new Review(req.body.review);
+
+    listing.reviews.push(newReview);
+
+    await newReview.save();
+    await listing.save();
+
+    res.redirect(`/listings/${listing._id}`);
+}));
+
+// delete review route
+app.delete("/listings/:id/reviews/:reviewId", wrapAsync(async (req, res) => {
+    let { id, reviewId } = req.params;
+
+    await Listing.findByIdAndUpdate(id, {
+        $pull: { reviews: reviewId }
+    });
+
+    await Review.findByIdAndDelete(reviewId);
+
+    res.redirect(`/listings/${id}`);
+}));
+
+// error route
 app.all('/{*splat}',(req,res,next)=>{
     next(new ExpressError(404,"page not found!"));
 });
@@ -113,8 +142,8 @@ app.use((err,req,res,next)=>{
     let {statusCode=500 , message="something went wrong!"}=err;
     res.render("error.ejs",{message});
     // res.status(statusCode).send(message);
-})
+});
 
-app.listen(7984,()=>{
-    console.log("server is listening port 7984 ");
+app.listen(7984, () => {
+    console.log("server is listening port 7984");
 });
