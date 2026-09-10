@@ -38,7 +38,7 @@ app.use(express.static(path.join(__dirname, "public")));
 const sessionOptions = {
     secret: 'mysuperscret',
     resave: false,
-    saveUnintialized: true,
+    saveUninitialized: true,
     cookie: {
         expires: Date.now() + 7 * 24 * 60 * 60 * 1000,
         maxAge: 7 * 24 * 60 * 60 * 1000,
@@ -61,15 +61,17 @@ passport.serializeUser(user.serializeUser());
 passport.deserializeUser(user.deserializeUser());
 
 app.use((req,res,next) =>{
+    console.log("CURRENT USER:", req.user);
     res.locals.success = req.flash('success');
     res.locals.error = req.flash('error');
+    res.locals.currUser = req.user;
     next();
 });
 
 
 
 app.use("/listings", listingRouter);
-app.use("listings/:id/reviews", reviewRouter);
+app.use("/listings/:id/reviews", reviewRouter);
 app.use("/", userRouter);
 
 
