@@ -1,3 +1,9 @@
+if (process.env.NODE_ENV !== "production") {
+    require("dotenv").config();
+}
+
+console.log(process.env.SECRET);
+
 const express =require ("express");
 const app =express();
 const mongoose= require("mongoose");
@@ -65,6 +71,7 @@ app.use((req,res,next) =>{
     res.locals.success = req.flash('success');
     res.locals.error = req.flash('error');
     res.locals.currUser = req.user;
+     res.locals.mapToken = process.env.MAP_TOKEN;
     next();
 });
 
@@ -80,12 +87,17 @@ app.all('/{*splat}',(req,res,next)=>{
     next(new ExpressError(404,"page not found!"));
 });
 
-app.use((err,req,res,next)=>{
-    let {statusCode=500 , message="something went wrong!"}=err;
-    res.render("error.ejs",{message});
-    // res.status(statusCode).send(message);
-});
+app.use((err, req, res, next) => {
+    console.log("========== ERROR ==========");
+    console.log(err);
+    console.log("STATUS CODE:", err.statusCode);
+    console.log("MESSAGE:", err.message);
+    console.log("============================");
 
+    let { statusCode = 500, message = "something went wrong!" } = err;
+
+    res.status(statusCode).render("error.ejs", { message });
+});
 app.listen(7984, () => {
     console.log("server is listening port 7984");
 });
