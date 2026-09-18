@@ -58,7 +58,7 @@ module.exports.createListing = async (req, res) => {
 
     // Nominatim Geocoding
     const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}&limit=1`,
+        `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(location)}&limit=1`,
         {
             headers: {
                 "User-Agent": "Wanderlust/1.0"
@@ -66,7 +66,12 @@ module.exports.createListing = async (req, res) => {
         }
     );
 
-    const data = await response.json();
+    if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Nominatim error: ${response.status} - ${text}`);
+}
+
+const data = await response.json();
 
     if (data.length === 0) {
         req.flash("error", "Location not found!");
@@ -141,14 +146,19 @@ module.exports.updateListing = async (req, res) => {
         const location =
             `${req.body.listing.location}, ${req.body.listing.country}`;
         const response = await fetch(
-            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}&limit=1`,
+            `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(location)}&limit=1`,
             {
                 headers: {
                     "User-Agent": "Wanderlust/1.0"
                 }
             }
         );
-        const data = await response.json();
+       if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Nominatim error: ${response.status} - ${text}`);
+}
+
+const data = await response.json();
 
         if (data.length > 0) {
             listing.geometry = {
