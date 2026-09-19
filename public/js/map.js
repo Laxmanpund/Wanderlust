@@ -5,11 +5,22 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19
 }).addTo(map);
 
-// Location marker
-const marker = L.marker(coordinates).addTo(map);
+// 🔴 Red marker icon
+const redIcon = L.icon({
+    iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
+    shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
 
-// Popup
-marker
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+});
+
+// 📍 Location marker + popup
+L.marker(coordinates, {
+    icon: redIcon
+})
+    .addTo(map)
     .bindPopup(`
         <b>${locationName}</b><br>
         ${countryName}
