@@ -5,7 +5,13 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19
 }).addTo(map);
 
-L.marker(coordinates)
-    .addTo(map)
-    .bindPopup("<b>Listing Location</b>")
+// Location marker
+const marker = L.marker(coordinates).addTo(map);
+
+// Popup
+marker
+    .bindPopup(`
+        <b>${locationName}</b><br>
+        ${countryName}
+    `)
     .openPopup();
