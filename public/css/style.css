@@ -176,3 +176,62 @@
     padding: 0.5rem 3rem 0.5rem 3rem;
     font-size: 0.8rem;
 }
+
+/* LISTING FILTERS */
+
+#filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.filter {
+    text-align: center;
+    margin-top: 1rem;
+    margin-right: 2rem;
+    opacity: 0.7;
+    text-decoration: none;
+    color: #6c6c6c;
+}
+
+.filter:visited,
+.filter:active {
+    color: #6c6c6c;
+    text-decoration: none;
+}
+
+.filter:hover {
+    opacity: 1;
+    cursor: pointer;
+    color: #222;
+    text-decoration: none;
+}
+
+.filter.active {
+    opacity: 1;
+    color: #6c6c6c;
+    border-bottom: none;
+    text-decoration: none;
+}
+
+.filter p {
+    font-size: 0.8rem;
+    margin-bottom: 0;
+}
+
+
+/* TAX TOGGLE */
+
+#tax-info {
+    display: none;
+}
+
+.tax-toggle {
+    border: 1px solid black;
+    border-radius: 1rem;
+    height: 3rem;
+    padding: 1rem;
+    margin-left: 3rem;
+    display: flex;
+    align-items: center;
+}
