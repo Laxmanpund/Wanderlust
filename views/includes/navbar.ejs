@@ -13,10 +13,7 @@
         <form class="d-flex" role="search" action="/listings" method="GET">
           <input class="form-control me-2 search-inp" type="search" name="search" value="<%= typeof search !== 'undefined' ? search : '' %>" placeholder="Search destination" aria-label="Search">
 
-          <button class="btn search-btn" type="submit">
-            <i class="fa-solid fa-magnifying-glass"></i>
-            Search
-          </button>
+          <button class="btn search-btn" type="submit"><i class="fa-solid fa-magnifying-glass"></i>Search</button>
         </form>
       </div>
 
@@ -27,7 +24,8 @@
         <a class="nav-link" href="/login"><b>Log in</b></a>
         <% } %>
         <% if(currUser){ %>
-        <a class="nav-link" href="/logout"><b>Logout</b></a>
+          <a class="nav-link" href="/wishlist">❤️ Wishlist</a>
+          <a class="nav-link" href="/logout"><b>Logout</b></a>
         <% } %>
       </div>
     </div>

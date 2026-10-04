@@ -1,13 +1,11 @@
 const Listing = require("../models/listing");
 
-// INDEX - Show all listings + Search + Category filter
 module.exports.index = async (req, res) => {
-
-    const { search, category } = req.query;
+    const {search,category,minPrice,maxPrice,sort} = req.query;
 
     let filter = {};
 
-    // 🔎 Search by title, location or country
+    // Search
     if (search && search.trim() !== "") {
 
         const searchText = search.trim();
@@ -34,38 +32,86 @@ module.exports.index = async (req, res) => {
         ];
     }
 
-    // 🏷️ Category filter
+
+    // Category Filter
     if (category && category.trim() !== "") {
         filter.category = category.trim();
     }
 
-    const allListings = await Listing.find(filter);
+
+    //  Price Filter
+    if (minPrice || maxPrice) {
+
+        filter.price = {};
+
+        if (minPrice) {
+            filter.price.$gte = Number(minPrice);
+        }
+
+        if (maxPrice) {
+            filter.price.$lte = Number(maxPrice);
+        }
+    }
+
+
+    // Sorting
+    let sortOption = {};
+
+    switch (sort) {
+
+        case "priceLow":
+            sortOption.price = 1;
+            break;
+
+        case "priceHigh":
+            sortOption.price = -1;
+            break;
+
+        case "newest":
+            sortOption._id = -1;
+            break;
+
+        case "oldest":
+            sortOption._id = 1;
+            break;
+
+        default:
+            sortOption = {};
+    }
+
+    const allListings = await Listing
+        .find(filter)
+        .sort(sortOption);
+
 
     res.render("listings/index.ejs", {
         allListings,
         search: search || "",
-        category: category || ""
+        category: category || "",
+        minPrice: minPrice || "",
+        maxPrice: maxPrice || "",
+        sort: sort || ""
     });
 };
 
 
-// Render new listing form
+//  Render new listing form
 module.exports.renderNewForm = (req, res) => {
     res.render("listings/new.ejs");
 };
 
 
-// SHOW - Show one listing
+// Show one listing
 module.exports.showListing = async (req, res) => {
 
     let { id } = req.params;
-
-    const listing = await Listing.findById(id)
+    const listing = await Listing
+        .findById(id)
         .populate({
             path: "reviews",
             populate: {
-                path: "author",
-            },
+                path: "author"
+            }
         })
         .populate("owner");
 
@@ -78,18 +124,18 @@ module.exports.showListing = async (req, res) => {
         return res.redirect("/listings");
     }
 
-    // GeoJSON stores [longitude, latitude]
-    // Leaflet needs [latitude, longitude]
-
+    // Default India coordinates
     let coordinates = [20.5937, 78.9629];
 
+
+    // Listing coordinates
     if (
         listing.geometry &&
         listing.geometry.coordinates &&
         listing.geometry.coordinates.length === 2
     ) {
-        const [lng, lat] = listing.geometry.coordinates;
 
+        const [lng, lat] = listing.geometry.coordinates;
         coordinates = [lat, lng];
     }
 
@@ -100,13 +146,13 @@ module.exports.showListing = async (req, res) => {
 };
 
 
-// CREATE - Create new listing
+//Create new listing
 module.exports.createListing = async (req, res) => {
-
     const location =
         `${req.body.listing.location}, ${req.body.listing.country}`;
 
-    // Nominatim Geocoding
+
+    // Get coordinates from OpenStreetMap
     const response = await fetch(
         `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(location)}&limit=1`,
         {
@@ -116,33 +162,31 @@ module.exports.createListing = async (req, res) => {
         }
     );
 
+
     if (!response.ok) {
-
         const text = await response.text();
-
         throw new Error(
             `Nominatim error: ${response.status} - ${text}`
         );
     }
 
     const data = await response.json();
-
     if (data.length === 0) {
-
-        req.flash("error", "Location not found!");
-
+        req.flash(
+            "error",
+            "Location not found!"
+        );
         return res.redirect("/listings/new");
     }
 
-    // GeoJSON : [longitude, latitude]
     const coordinates = [
         Number(data[0].lon),
         Number(data[0].lat)
     ];
 
-    const newlisting = new Listing(req.body.listing);
 
-    // Owner
+    // Create listing
+    const newlisting = new Listing(req.body.listing);
     newlisting.owner = req.user._id;
 
     // Cloudinary image
@@ -151,85 +195,59 @@ module.exports.createListing = async (req, res) => {
         filename: req.file.filename
     };
 
-    // GeoJSON geometry
     newlisting.geometry = {
         type: "Point",
-        coordinates: coordinates
-    };
-
+        coordinates: coordinates};
     await newlisting.save();
 
-    req.flash(
-        "success",
-        "New listing created!"
-    );
-
+    req.flash("success","New listing created!");
     res.redirect("/listings");
 };
 
 
 // Render edit form
 module.exports.renderEditForm = async (req, res) => {
-
     let { id } = req.params;
-
     const listing = await Listing.findById(id);
 
     if (!listing) {
-
-        req.flash(
-            "error",
-            "Listing you requested for does not exist!"
-        );
-
+        req.flash("error","Listing you requested for does not exist!");
         return res.redirect("/listings");
     }
-
-    res.render("listings/edit.ejs", {
-        listing
-    });
+    res.render("listings/edit.ejs", {listing});
 };
 
 
-// UPDATE - Update listing
+// Update listing
 module.exports.updateListing = async (req, res) => {
-
     let { id } = req.params;
-
     let listing = await Listing.findById(id);
-
     if (!listing) {
-
-        req.flash(
-            "error",
-            "Listing you requested for does not exist!"
-        );
-
+        req.flash("error","Listing you requested for does not exist!");
         return res.redirect("/listings");
     }
 
+    // Update text fields
     Object.assign(
         listing,
         req.body.listing
     );
 
-    // If new image uploaded
+    // Update image if new image uploaded
     if (req.file) {
-
         listing.image = {
             url: req.file.path,
             filename: req.file.filename
         };
     }
 
-    // Re-geocode if location/country changed
+    // Update location coordinates
     if (
         req.body.listing.location ||
         req.body.listing.country
     ) {
-
         const location =
-            `${req.body.listing.location}, ${req.body.listing.country}`;
+            `${listing.location}, ${listing.country}`;
 
         const response = await fetch(
             `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(location)}&limit=1`,
@@ -241,9 +259,7 @@ module.exports.updateListing = async (req, res) => {
         );
 
         if (!response.ok) {
-
             const text = await response.text();
-
             throw new Error(
                 `Nominatim error: ${response.status} - ${text}`
             );
@@ -252,7 +268,6 @@ module.exports.updateListing = async (req, res) => {
         const data = await response.json();
 
         if (data.length > 0) {
-
             listing.geometry = {
                 type: "Point",
                 coordinates: [
@@ -264,30 +279,16 @@ module.exports.updateListing = async (req, res) => {
     }
 
     await listing.save();
-
-    req.flash(
-        "success",
-        "Listing updated!"
-    );
-
+    req.flash("success","Listing updated!");
     res.redirect(`/listings/${id}`);
 };
 
 
-// DELETE - Delete listing
+// Delete listing
 module.exports.destroyListing = async (req, res) => {
-
     let { id } = req.params;
-
-    const deletelisting =
-        await Listing.findByIdAndDelete(id);
-
+    const deletelisting =await Listing.findByIdAndDelete(id);
     console.log(deletelisting);
-
-    req.flash(
-        "success",
-        "Listing deleted!"
-    );
-
+    req.flash("success","Listing deleted!");
     return res.redirect("/listings");
 };

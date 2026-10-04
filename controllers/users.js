@@ -45,3 +45,38 @@ module.exports.logout = (req,res,next) => {
         res.redirect("/listings");
     });
 };
+
+
+// Show Wishlist
+module.exports.showWishlist = async (req, res) => {
+
+    const currentUser = await user
+        .findById(req.user._id)
+        .populate("wishlist");
+
+    res.render("users/wishlist.ejs", {
+        listings: currentUser.wishlist
+    });
+};
+
+
+// Add / Remove Wishlist
+module.exports.toggleWishlist = async (req, res) => {
+
+    const listingId = req.params.id;
+    const currentUser = await user.findById(req.user._id);
+    const alreadyAdded = currentUser.wishlist.some(
+        (id) => id.toString() === listingId
+    );
+
+    if (alreadyAdded) {
+        currentUser.wishlist.pull(listingId);
+        req.flash("success","Removed from wishlist!");
+    } else {
+        currentUser.wishlist.push(listingId);
+        req.flash("success","Added to wishlist!");
+    }
+
+    await currentUser.save();
+    res.redirect(`/listings/${listingId}`);
+};
