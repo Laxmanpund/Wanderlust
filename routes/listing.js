@@ -12,7 +12,12 @@ const upload = multer({ storage });
 router
 .route("/")
 .get( wrapAsync(listingController.index))
-.post( isLoggedIn, upload.single("image"), validatelisting,
+.post( isLoggedIn, upload.fields([
+    {
+        name: "images",
+        maxCount: 10
+    }
+]), validatelisting,
  wrapAsync(listingController.createListing));
 
 
