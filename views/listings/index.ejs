@@ -174,21 +174,45 @@
             <div class="card-img-overlay">abc</div>
 
               <div class="card-body">
-                <p class="card-text">
-                  <b><%= Listings.title %> </b><br>
-                  &#8377; <%= Listings.price.toLocaleString("en-IN") %> /night
-                  <i id="tax-info">&nbsp; &nbsp; +18% GST</i>
+               <p class="card-text">
+                  <b><%= Listings.title %></b><br>
+                  ₹ <span
+                    class="listing-price"
+                    data-price="<%= Listings.price %>"
+                  ><%= Listings.price.toLocaleString("en-IN") %></span> /night
+                  <i class="tax-info">&nbsp; +18% GST</i>
                 </p>
               </div> 
+
             </div>
       </a >
     <% } %>
   </div>
 </body>
 
+
 <script>
-    let taxSwitch = document.getElementById("switchCheckDefault");
-    taxSwitch.addEventListener("click", () =>{
-        console.log("clicked");
+    const taxSwitch = document.getElementById("switchCheckDefault");
+    const taxInfo = document.querySelectorAll(".tax-info");
+    const priceElements = document.querySelectorAll(".listing-price");
+
+    taxSwitch.addEventListener("change", () => {
+        taxInfo.forEach((element) => {
+            element.style.display = taxSwitch.checked
+                ? "inline"
+                : "none";
+        });
+
+        priceElements.forEach((element) => {
+            const price = Number(element.dataset.price);
+
+            element.textContent = taxSwitch.checked
+                ? (price * 1.18).toLocaleString("en-IN", {
+                    maximumFractionDigits: 2
+                })
+                : price.toLocaleString("en-IN", {
+                    maximumFractionDigits: 2
+                });
+        });
     });
 </script>

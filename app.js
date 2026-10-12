@@ -3,9 +3,10 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 const dns = require("dns");
+
 dns.setServers([
-    "1.1.1.1",
-    "8.8.8.8"
+    "8.8.8.8",
+    "1.1.1.1"
 ]);
 
 const express =require ("express");
@@ -30,17 +31,17 @@ const userRouter = require("./routes/user.js");
 
 // const MANGO_URL= "mongodb://127.0.0.1:27017/wanderlust";
 
-const dbUrl= process.env.ATLAS_URL;
+const dbUrl = process.env.ATLAS_URL;
 
-main().then(()=> {
-    console.log("connected to DB");
-})
-.catch(err => {
-    console.log(err);
-});
 async function main() {
     await mongoose.connect(dbUrl);
+    console.log("Connected to DB");
 }
+
+main().catch((err) => {
+    console.error("connection failed:");
+    console.error(err.message);
+});
 
 app.set("view engine", "ejs");
 app.set("views",path.join(__dirname,"views"));
@@ -91,7 +92,7 @@ app.use((req,res,next) =>{
     console.log("CURRENT USER:", req.user);
     res.locals.success = req.flash('success');
     res.locals.error = req.flash('error');
-    res.locals.currUser = req.user;
+    res.locals.currUser = req.user || null;
    
     next();
 });

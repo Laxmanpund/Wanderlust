@@ -1,73 +1,70 @@
 const Listing = require("../models/listing");
 
+
 module.exports.index = async (req, res) => {
+    const { search, category, minPrice, maxPrice, sort } = req.query;
 
-    const {search,category,minPrice,maxPrice,sort} = req.query;
+    const filter = {};
 
-    let filter = {};
-
+    // Search by title, location or country
     if (search && search.trim() !== "") {
         const searchText = search.trim();
+
         filter.$or = [
-            {
-                title: {
-                    $regex: searchText,
-                    $options: "i"
-                }
-            },
-            {
-                location: {
-                    $regex: searchText,
-                    $options: "i"
-                }
-            },
-            {
-                country: {
-                    $regex: searchText,
-                    $options: "i"
-                }
-            }
+            { title: { $regex: searchText, $options: "i" } },
+            { location: { $regex: searchText, $options: "i" } },
+            { country: { $regex: searchText, $options: "i" } }
         ];
     }
 
-    // Category
+    // Category filter
     if (category && category.trim() !== "") {
         filter.category = category.trim();
     }
 
-    // Price Filter
-    if (minPrice || maxPrice) {
-        filter.price = {};
-        if (minPrice) {
-            filter.price.$gte = Number(minPrice);
+    // Minimum price
+    if (minPrice !== undefined && minPrice !== "") {
+        const min = Number(minPrice);
+
+        if (Number.isFinite(min) && min >= 0) {
+            filter.price = { ...filter.price, $gte: min };
         }
-        if (maxPrice) {
-            filter.price.$lte = Number(maxPrice);
+    }
+
+    // Maximum price
+    if (maxPrice !== undefined && maxPrice !== "") {
+        const max = Number(maxPrice);
+
+        if (Number.isFinite(max) && max >= 0) {
+            filter.price = { ...filter.price, $lte: max };
         }
     }
 
     // Sorting
     let sortOption = {};
+
     switch (sort) {
         case "priceLow":
-            sortOption.price = 1;
+            sortOption = { price: 1 };
             break;
+
         case "priceHigh":
-            sortOption.price = -1;
+            sortOption = { price: -1 };
             break;
+
         case "newest":
-            sortOption._id = -1;
+            sortOption = { _id: -1 };
             break;
+
         case "oldest":
-            sortOption._id = 1;
+            sortOption = { _id: 1 };
             break;
+
         default:
             sortOption = {};
     }
 
-    const allListings = await Listing
-        .find(filter)
-        .sort(sortOption);
+    const allListings = await Listing.find(filter).sort(sortOption);
 
     res.render("listings/index.ejs", {
         allListings,
