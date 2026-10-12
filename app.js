@@ -38,10 +38,16 @@ async function main() {
     console.log("Connected to DB");
 }
 
-main().catch((err) => {
-    console.error("connection failed:");
-    console.error(err.message);
-});
+main()
+    .then(() => {
+        app.listen(7984, () => {
+            console.log("Server is listening on port 7984");
+        });
+    })
+    .catch((err) => {
+        console.error("Connection failed:");
+        console.error(err.message);
+    });
 
 app.set("view engine", "ejs");
 app.set("views",path.join(__dirname,"views"));
@@ -74,9 +80,6 @@ const sessionOptions = {
     }
 };
 
-// app.get("/",(req,res) =>{
-    // res.send("Hi, i'm root");
-// });
 
 app.use(session(sessionOptions));
 app.use(flash());
@@ -97,7 +100,9 @@ app.use((req,res,next) =>{
     next();
 });
 
-
+app.get("/", (req, res) => {
+    res.redirect("/listings");
+});
 
 app.use("/listings", listingRouter);
 app.use("/listings/:id/reviews", reviewRouter);
@@ -120,6 +125,4 @@ app.use((err, req, res, next) => {
 
     res.status(statusCode).render("error.ejs", { message });
 });
-app.listen(7984, () => {
-    console.log("server is listening port 7984");
-});
+
