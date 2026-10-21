@@ -32,10 +32,12 @@ const userRouter = require("./routes/user.js");
 // const MANGO_URL= "mongodb://127.0.0.1:27017/wanderlust";
 
 const dbUrl = process.env.ATLAS_URL;
+console.log("Database name:", mongoose.connection.name);
 
 async function main() {
     await mongoose.connect(dbUrl);
     console.log("Connected to DB");
+    console.log("Database name:", mongoose.connection.name);
 }
 
 main()
